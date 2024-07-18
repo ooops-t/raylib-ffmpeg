@@ -72,11 +72,12 @@ int main(int argc, char *argv[])
   SetWindowState(FLAG_WINDOW_TOPMOST);
   
   char buf[512*256] = {0}, abuf[512*256 * 3 / 2] = {0};
+  char ubuf[256*128] = {0}, vbuf[256*128] = {0};
   ssize_t ret;
 
   SetTargetFPS(20);
 
-  Image img = {
+  Image yimg = {
       .data = buf,
       .width = 512,
       .height = 256,
@@ -84,18 +85,45 @@ int main(int argc, char *argv[])
       .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE,
     };
 
-  Texture2D texture = LoadTextureFromImage(img);
+  Image uimg = {
+      .data = buf,
+      .width = 256,
+      .height = 128,
+      .mipmaps = 1,
+      .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE,
+    };
 
+  Image vimg = {
+      .data = buf,
+      .width = 256,
+      .height = 128,
+      .mipmaps = 1,
+      .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE,
+    };
+
+  
+
+  Texture2D ytexture = LoadTextureFromImage(yimg);
+  Texture2D utexture = LoadTextureFromImage(uimg);
+  Texture2D vtexture = LoadTextureFromImage(vimg);
+
+  
   while(!WindowShouldClose()) {
     ret = readBuf(pipefd[READ_END], 512 * 256 * 3 / 2, abuf);
     memcpy(buf, abuf, 512 * 256);
-    UpdateTexture(texture, buf);
+    memcpy(ubuf, abuf + 512 * 256, 512 * 256 / 4);
+    memcpy(vbuf, abuf + (512 * 256) + (512 * 256 / 4), 512 * 256 / 4);
+    UpdateTexture(ytexture, buf);
+    UpdateTexture(utexture, ubuf);
+    UpdateTexture(vtexture, vbuf);
 
     
     BeginDrawing();
     ClearBackground(RAYWHITE);
     DrawFPS(512, 256);
-    DrawTexture(texture, 0, 0, WHITE);
+    DrawTexture(ytexture, 0, 0, WHITE);
+    DrawTexture(utexture, 0, 256, WHITE);
+    DrawTexture(vtexture, 256, 256, WHITE);
     EndDrawing();
   }
 
